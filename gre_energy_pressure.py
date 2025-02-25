@@ -2,7 +2,7 @@ import os
 from typing import Tuple
 import pandas as pd
 
-def grep_energy(prefix: str, csv_file: str = "energy_data.csv") -> Tuple[float, float]:
+def extract_outcar_data(prefix: str, csv_file: str = "energy_data.csv") -> Tuple[float, float]:
     """
     Extract energy and pressure data from OUTCAR files and save to CSV.
 
@@ -20,7 +20,7 @@ def grep_energy(prefix: str, csv_file: str = "energy_data.csv") -> Tuple[float, 
                              If no data is found, returns (nan, nan).
 
     Examples:
-        >>> mean, error = grep_energy("666sym")
+        >>> mean, error = extract_outcar_data("666sym")
         >>> print(f"Mean: {mean}, Std Error: {error}")
     """
     data = []
@@ -50,14 +50,11 @@ def grep_energy(prefix: str, csv_file: str = "energy_data.csv") -> Tuple[float, 
                     'pressure_diff': values['pal'] - values['palmg']
                 })
     
-    # Write data to CSV (empty DataFrame with columns if no data)
     columns = ['ealmg', 'eal', 'energy_diff', 'pal', 'palmg', 'pressure_diff']
     df = pd.DataFrame(data, columns=columns)
     df.to_csv(csv_file, index=False)
-    
-    # Return mean and standard error (nan if no data)
     return df['energy_diff'].mean(), df['energy_diff'].sem()
 
 if __name__ == "__main__":
-    mean, error = grep_energy("666sym")
+    mean, error = extract_outcar_data("666sym")
     print(f"Mean: {mean}, Std Error: {error}")
