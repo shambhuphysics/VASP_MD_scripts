@@ -1,12 +1,32 @@
 import os
+from typing import Tuple
 import pandas as pd
 
-def grep_energy(csv_file="energy_data.csv"):
-    """Extract energy/pressure from OUTCAR files and save to CSV with stats."""
+def grep_energy(prefix: str, csv_file: str = "energy_data.csv") -> Tuple[float, float]:
+    """
+    Extract energy and pressure data from OUTCAR files and save to CSV.
+
+    This function reads energy and pressure values from VASP OUTCAR files in
+    directories named Al{prefix} and AlMg{prefix}, computes differences, and
+    saves them to a CSV file. It returns the mean and standard error of the
+    energy differences.
+
+    Args:
+        prefix (str): Directory prefix for Al and AlMg folders (e.g., '666sym').
+        csv_file (str, optional): Path to the output CSV file. Defaults to "energy_data.csv".
+
+    Returns:
+        Tuple[float, float]: Mean and standard error of the energy differences.
+                             If no data is found, returns (nan, nan).
+
+    Examples:
+        >>> mean, error = grep_energy("666sym")
+        >>> print(f"Mean: {mean}, Std Error: {error}")
+    """
     data = []
     for i in range(10, 10001, 10):
-        al_file = f"Al666sym/OUTCAR.{i}"
-        almg_file = f"AlMg666sym/OUTCAR.{i}"
+        al_file = f"Al{prefix}/OUTCAR.{i}"
+        almg_file = f"AlMg{prefix}/OUTCAR.{i}"
         
         if os.path.isfile(al_file) and os.path.isfile(almg_file):
             values = {'eal': None, 'pal': None, 'ealmg': None, 'palmg': None}
@@ -20,7 +40,7 @@ def grep_energy(csv_file="energy_data.csv"):
                             if len(parts) > 3 and parts[3].replace('.', '', 1).isdigit():
                                 values[p_key] = float(parts[3])
             
-            if all(v is not None for v in values.values()):   # checks fi all is treu
+            if all(v is not None for v in values.values()):
                 data.append({
                     'ealmg': values['ealmg'],
                     'eal': values['eal'],
@@ -30,7 +50,14 @@ def grep_energy(csv_file="energy_data.csv"):
                     'pressure_diff': values['pal'] - values['palmg']
                 })
     
-    # Use pandas to write data and compute stats
-    if data:
-        df = pd.DataFrame(data)
-        df.to_csv(csv_file, index=False)
+    # Write data to CSV (empty DataFrame with columns if no data)
+    columns = ['ealmg', 'eal', 'energy_diff', 'pal', 'palmg', 'pressure_diff']
+    df = pd.DataFrame(data, columns=columns)
+    df.to_csv(csv_file, index=False)
+    
+    # Return mean and standard error (nan if no data)
+    return df['energy_diff'].mean(), df['energy_diff'].sem()
+
+if __name__ == "__main__":
+    mean, error = grep_energy("666sym")
+    print(f"Mean: {mean}, Std Error: {error}")
